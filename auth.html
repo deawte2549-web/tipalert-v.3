@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TipAlert — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800&family=Space+Mono:wght@700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0C0C10;--surface:#13131A;--surface2:#1A1A24;--border:rgba(255,255,255,0.07);--accent:#7C3AED;--accent2:#A855F7;--green:#10B981;--red:#EF4444;--text:#F1F0FF;--muted:rgba(241,240,255,0.45);--font:'Prompt',sans-serif;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.bg-glow{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(124,58,237,0.18) 0%,transparent 70%);z-index:0;}
+.wrap{width:100%;max-width:420px;position:relative;z-index:1;}
+.logo{text-align:center;margin-bottom:32px;}
+.logo-text{font-size:32px;font-weight:800;background:linear-gradient(135deg,var(--accent2),#EC4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo-sub{font-size:12px;color:var(--muted);margin-top:4px;letter-spacing:1px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;}
+.tabs{display:flex;background:var(--surface2);border-radius:12px;padding:4px;gap:3px;margin-bottom:24px;}
+.tab{flex:1;padding:9px;border:none;background:transparent;color:var(--muted);font-family:var(--font);font-size:13px;font-weight:500;border-radius:9px;cursor:pointer;transition:all 0.2s;}
+.tab.active{background:rgba(124,58,237,0.25);color:var(--accent2);font-weight:700;}
+.form-label{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:7px;display:block;}
+.form-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-family:var(--font);font-size:14px;outline:none;transition:border-color 0.2s;margin-bottom:14px;}
+.form-input:focus{border-color:var(--accent);}
+.form-input::placeholder{color:rgba(255,255,255,0.2);}
+.btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:14px;cursor:pointer;font-size:15px;font-weight:700;color:#fff;font-family:var(--font);box-shadow:0 6px 24px rgba(124,58,237,0.35);transition:all 0.2s;margin-top:4px;}
+.btn:hover{transform:translateY(-1px);}
+.btn:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+.error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:10px 14px;color:var(--red);font-size:12px;margin-bottom:14px;display:none;}
+.success{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);border-radius:10px;padding:10px 14px;color:var(--green);font-size:12px;margin-bottom:14px;display:none;}
+.footer{text-align:center;font-size:11px;color:rgba(255,255,255,0.2);margin-top:20px;}
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+<div class="wrap">
+  <div class="logo">
+    <div style="font-size:52px;margin-bottom:8px;animation:float 3s ease-in-out infinite;">🎙️</div>
+    <div class="logo-text">TipAlert</div>
+    <div class="logo-sub">Donation Alert สำหรับ Streamer ไทย</div>
+  </div>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" id="tab-login" onclick="switchTab('login')">เข้าสู่ระบบ</button>
+      <button class="tab" id="tab-register" onclick="switchTab('register')">สมัครใหม่</button>
+    </div>
+    <div id="error-box" class="error"></div>
+    <div id="success-box" class="success"></div>
+
+    <!-- LOGIN -->
+    <div id="form-login">
+      <label class="form-label">Email</label>
+      <input class="form-input" type="email" id="login-email" placeholder="you@email.com"/>
+      <label class="form-label">Password</label>
+      <input class="form-input" type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <button class="btn" id="login-btn" onclick="doLogin()">🚀 เข้าสู่ระบบ</button>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="form-register" style="display:none;">
+      <label class="form-label">ชื่อ Channel / Username</label>
+      <input class="form-input" type="text" id="reg-username" placeholder="your_channel_name"/>
+      <label class="form-label">Email</label>
+      <input class="form-input" type="email" id="reg-email" placeholder="you@email.com"/>
+      <label class="form-label">Password</label>
+      <input class="form-input" type="password" id="reg-password" placeholder="อย่างน้อย 6 ตัวอักษร"/>
+      <button class="btn" id="reg-btn" onclick="doRegister()">✨ สมัครใช้งานฟรี</button>
+    </div>
+  </div>
+  <div class="footer">🔒 ข้อมูลของคุณปลอดภัย • TipAlert</div>
+</div>
+<style>@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ===== ใส่ Supabase Key ของคุณตรงนี้ =====
+const SUPABASE_URL = 'https://okznjhisukdndkkauqsa.supabase.co/rest/v1/'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rem5qaGlzdWtkbmRra2F1cXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMDE3NDcsImV4cCI6MjA5NTc3Nzc0N30.IOxGrKBx2KFcXHlGPlmXa_5jmifmXhieQKKUND6mepw'
+// ==========================================
+
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+// เช็คว่า login อยู่แล้วหรือเปล่า
+db.auth.getSession().then(({ data: { session } }) => {
+  if (session) window.location.href = 'index.html'
+})
+
+function switchTab(tab) {
+  document.getElementById('form-login').style.display = tab==='login'?'block':'none'
+  document.getElementById('form-register').style.display = tab==='register'?'block':'none'
+  document.getElementById('tab-login').classList.toggle('active', tab==='login')
+  document.getElementById('tab-register').classList.toggle('active', tab==='register')
+  hideMessages()
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-box')
+  el.textContent = '⚠️ ' + msg; el.style.display = 'block'
+  document.getElementById('success-box').style.display = 'none'
+}
+function showSuccess(msg) {
+  const el = document.getElementById('success-box')
+  el.textContent = '✅ ' + msg; el.style.display = 'block'
+  document.getElementById('error-box').style.display = 'none'
+}
+function hideMessages() {
+  document.getElementById('error-box').style.display = 'none'
+  document.getElementById('success-box').style.display = 'none'
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim()
+  const password = document.getElementById('login-password').value
+  if (!email || !password) { showError('กรุณากรอกข้อมูลให้ครบ'); return }
+  const btn = document.getElementById('login-btn')
+  btn.disabled = true; btn.textContent = '⏳ กำลังเข้าสู่ระบบ...'
+  const { error } = await db.auth.signInWithPassword({ email, password })
+  if (error) { showError(error.message); btn.disabled=false; btn.textContent='🚀 เข้าสู่ระบบ'; return }
+  window.location.href = 'index.html'
+}
+
+async function doRegister() {
+  const username = document.getElementById('reg-username').value.trim()
+  const email = document.getElementById('reg-email').value.trim()
+  const password = document.getElementById('reg-password').value
+  if (!username || !email || !password) { showError('กรุณากรอกข้อมูลให้ครบ'); return }
+  if (username.length < 3) { showError('Username ต้องมีอย่างน้อย 3 ตัวอักษร'); return }
+  if (password.length < 6) { showError('Password ต้องมีอย่างน้อย 6 ตัวอักษร'); return }
+  const btn = document.getElementById('reg-btn')
+  btn.disabled = true; btn.textContent = '⏳ กำลังสมัคร...'
+  const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } })
+  if (error) { showError(error.message); btn.disabled=false; btn.textContent='✨ สมัครใช้งานฟรี'; return }
+  // สร้าง profile
+  if (data.user) {
+    await db.from('streamer_profiles').upsert({
+      id: data.user.id, username,
+      welcome_msg: 'ขอบคุณที่ support นะครับ! 🙏',
+      min_donation: 20, created_at: new Date().toISOString()
+    })
+  }
+  showSuccess('สมัครสำเร็จ! กรุณายืนยัน email แล้วเข้าสู่ระบบ')
+  btn.disabled = false; btn.textContent = '✨ สมัครใช้งานฟรี'
+}
+</script>
+</body>
+</html>
